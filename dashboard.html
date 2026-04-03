@@ -157,26 +157,24 @@
   .ohead {
     display: flex; align-items: center; justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.85rem 1.1rem;
+    padding: 0.75rem 1.1rem;
   }
-  .ohead-left { flex: 1; min-width: 0; }
-  .ohead-top { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
-  .ohead-bottom { margin-top: 0.35rem; }
-  .oname { font-size: clamp(1.1rem, 3.2vw, 1.35rem); font-weight: 400; color: var(--text); font-family: 'Graduate', serif; letter-spacing: 0.04em; line-height: 1.15; }
+  .ohead-left { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
   .onum {
-    font-family: 'DM Mono', monospace; font-size: clamp(0.68rem, 2vw, 0.78rem); font-weight: 500;
-    color: var(--green);
+    font-family: 'Nunito', sans-serif; font-size: clamp(0.9rem, 2.5vw, 1rem); font-weight: 800;
+    color: var(--muted);
   }
-  .otime { font-size: clamp(0.68rem, 2vw, 0.78rem); color: var(--muted); font-family: 'DM Mono', monospace; }
-  .ocard.done .onum { color: var(--yellow-dark); }
+  .oname { font-size: clamp(0.9rem, 2.5vw, 1rem); font-weight: 800; color: var(--text); font-family: 'Nunito', sans-serif; }
+  .oitem-name { font-size: clamp(0.9rem, 2.5vw, 1rem); color: var(--green); font-weight: 800; font-family: 'Nunito', sans-serif; }
+  .osep { color: var(--muted); font-weight: 400; }
+  .ocard.done .onum { color: var(--muted); }
   .ocard.urgent:not(.done) {
     border-color: var(--yellow-dark);
     box-shadow: 0 0 0 2px var(--yellow-dim), 0 2px 8px rgba(201, 160, 0, 0.15);
   }
-  .oitem-name { font-size: clamp(0.92rem, 2.5vw, 1.05rem); color: var(--text); font-weight: 700; line-height: 1.25; }
 
   .onotes {
-    margin: 0.5rem 1.1rem 0.7rem; padding: 0.45rem 0.65rem;
+    margin: 0.2rem 1.1rem 0.5rem; padding: 0.25rem 0.5rem;
     background: var(--yellow-dim); border-left: 3px solid var(--yellow-dark);
     border-radius: 4px; font-size: clamp(0.78rem, 2.2vw, 0.9rem); color: #8B6F00; font-style: italic; line-height: 1.35;
   }
@@ -320,7 +318,7 @@
     }
     .ocard { margin-bottom: 0; }
     .ohead { padding: 0.9rem 1.15rem; }
-    .oname { font-size: 1.25rem; }
+    .onum, .oname, .oitem-name { font-size: 1.05rem; }
     .done-btn { min-height: 48px; font-size: 0.88rem; padding: 0.55rem 1.1rem; }
     .an-wrap { padding: 1rem 1.5rem; }
     .an-grid { gap: 14px; }
@@ -499,12 +497,10 @@ function buildCard(order) {
   return `
     <div class="ohead">
       <div class="ohead-left">
-        <div class="ohead-top">
-          <span class="oname">${order.customer_name}</span>
-          <span class="onum">#${String(num).padStart(2,'0')}</span>
-          <span class="otime">${fmt(order.created_at)}</span>
-        </div>
-        <div class="ohead-bottom">${items}</div>
+        <span class="onum">#${String(num).padStart(2,'0')}</span>
+        <span class="oname">${order.customer_name}</span>
+        <span class="osep">—</span>
+        ${items}
       </div>
       ${btn}
     </div>
@@ -742,12 +738,25 @@ function closeResetModal() {
 async function confirmReset() {
   closeResetModal();
   if (!db) { toast('Supabase not configured'); return; }
-  const { error } = await db.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  if (error) { toast('Error — try again'); return; }
+  
+  // Delete all orders by their IDs
+  const ids = orders.map(o => o.id);
+  if (ids.length === 0) {
+    toast('No orders to clear');
+    return;
+  }
+  
+  const { error } = await db.from('orders').delete().in('id', ids);
+  if (error) { 
+    console.error('Reset error:', error);
+    toast('Error — check console'); 
+    return; 
+  }
   orders = [];
   orderNums = {};
   orderCounter = 1;
   renderOrders();
+  toast('Orders cleared');
 }
 
 async function load() {
