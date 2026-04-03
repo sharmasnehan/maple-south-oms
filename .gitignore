@@ -1,0 +1,3 @@
+.DS_Store
+# Optional: keep real keys only locally and use placeholders in config.js
+# config.local.js

@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1D7A2F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Maple South — Kitchen</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Graduate&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js" onerror="window.__MS_CONFIG_FAILED__=true"></script>
+<style>
+  :root {
+    --chart-h: 130px;
+    --green: #1D7A2F;
+    --green-dark: #155222;
+    --green-deep: #1D7A2F;
+    --green-mid: #2A9440;
+    --green-dim: rgba(29,122,47,0.12);
+    --yellow: #F5C800;
+    --yellow-dim: rgba(245,200,0,0.25);
+    --yellow-dark: #C9A000;
+    --surface: #FAF7F2;
+    --card: #FFFFFF;
+    --border: #D8E8DA;
+    --text: #1A2E1C;
+    --muted: #6B8F6E;
+    --danger: #C0392B;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    height: 100%;
+  }
+  body {
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Nunito', sans-serif;
+    font-size: 16px;
+    height: 100vh;
+    height: 100dvh;
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  header {
+    background: var(--green-deep);
+    border-bottom: 1px solid var(--border);
+    padding: calc(0.6rem + env(safe-area-inset-top, 0px)) 1rem 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .hbrand { display: flex; align-items: center; gap: 10px; }
+  .hbrand h1 { font-size: clamp(1.05rem, 4vw, 1.25rem); font-weight: 400; color: #fff; line-height: 1; font-family: 'Graduate', serif; letter-spacing: 0.04em; }
+  .hbrand p { font-size: clamp(0.62rem, 1.8vw, 0.72rem); color: rgba(255,255,255,0.65); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .hright { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+  .chip {
+    background: rgba(255,255,255,0.18);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 20px;
+    padding: 0.28rem 0.65rem;
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    font-size: clamp(0.7rem, 2.2vw, 0.78rem);
+    color: rgba(255,255,255,0.8);
+    font-family: 'DM Mono', monospace;
+  }
+  .chip b { color: var(--yellow); }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 6px var(--yellow);
+    flex-shrink: 0; align-self: center;
+  }
+  .dot.off { background: var(--danger); box-shadow: none; }
+
+  .tabs {
+    display: flex;
+    background: #fff;
+    border-bottom: 2px solid var(--border);
+    flex-shrink: 0;
+    touch-action: manipulation;
+  }
+  .tab {
+    flex: 1; padding: 0.75rem 0.35rem;
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    text-align: center; font-size: clamp(0.72rem, 2.6vw, 0.88rem); font-weight: 800;
+    color: var(--muted); cursor: pointer;
+    border-bottom: 3px solid transparent; margin-bottom: -2px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    letter-spacing: 0.03em; text-transform: uppercase;
+  }
+  .tab:active { background: rgba(29,122,47,0.06); }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+  .badge {
+    display: inline-block; background: var(--border); color: var(--muted);
+    font-size: clamp(0.62rem, 2vw, 0.72rem); font-weight: 800; border-radius: 10px;
+    padding: 2px 6px; margin-left: 3px; min-width: 18px; min-height: 20px;
+    text-align: center; vertical-align: middle; line-height: 1.2;
+  }
+  .tab.active .badge { background: var(--green); color: #fff; }
+
+  .panel { display: none; flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  .panel.show { display: block; }
+
+  .orders-list { padding: 0.75rem; max-width: 100%; }
+
+  .ocard {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 16px; margin-bottom: 0.75rem; overflow: hidden;
+    animation: slideIn 0.22s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    break-inside: avoid;
+  }
+  .ocard.done { opacity: 0.5; border-color: var(--green-mid); }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+  .ohead {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 1.1rem;
+  }
+  .ohead-left { flex: 1; min-width: 0; }
+  .ohead-top { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+  .ohead-bottom { margin-top: 0.35rem; }
+  .oname { font-size: clamp(1.1rem, 3.2vw, 1.35rem); font-weight: 400; color: var(--text); font-family: 'Graduate', serif; letter-spacing: 0.04em; line-height: 1.15; }
+  .onum {
+    font-family: 'DM Mono', monospace; font-size: clamp(0.68rem, 2vw, 0.78rem); font-weight: 500;
+    color: var(--green);
+  }
+  .otime { font-size: clamp(0.68rem, 2vw, 0.78rem); color: var(--muted); font-family: 'DM Mono', monospace; }
+  .ocard.done .onum { color: var(--yellow-dark); }
+  .ocard.urgent:not(.done) {
+    border-color: var(--yellow-dark);
+    box-shadow: 0 0 0 2px var(--yellow-dim), 0 2px 8px rgba(201, 160, 0, 0.15);
+  }
+  .oitem-name { font-size: clamp(0.92rem, 2.5vw, 1.05rem); color: var(--text); font-weight: 700; line-height: 1.25; }
+
+  .onotes {
+    margin: 0.5rem 1.1rem 0.7rem; padding: 0.45rem 0.65rem;
+    background: var(--yellow-dim); border-left: 3px solid var(--yellow-dark);
+    border-radius: 4px; font-size: clamp(0.78rem, 2.2vw, 0.9rem); color: #8B6F00; font-style: italic; line-height: 1.35;
+  }
+  .done-btn {
+    padding: 0.5rem 1rem; min-height: 44px; background: var(--green); color: white; border: none;
+    border-radius: 10px; font-family: 'Nunito', sans-serif; font-size: clamp(0.82rem, 2.2vw, 0.9rem); font-weight: 800;
+    cursor: pointer; transition: opacity 0.12s, transform 0.1s; -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation; -webkit-touch-callout: none; flex-shrink: 0;
+  }
+  .done-btn:active { transform: scale(0.95); opacity: 0.8; }
+  .done-btn.undo { background: var(--border); color: var(--muted); font-weight: 700; }
+
+  /* ── Analytics ── */
+  .an-wrap { padding: 0.75rem 1rem 1rem; }
+  .an-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .an-card {
+    background: var(--card); border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 0.85rem 0.55rem; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .an-val {
+    font-family: 'Graduate', serif; font-size: clamp(1.35rem, 4vw, 1.75rem); font-weight: 400;
+    color: var(--green); line-height: 1; margin-bottom: 0.28rem; letter-spacing: 0.04em;
+  }
+  .an-label { font-size: clamp(0.58rem, 1.8vw, 0.68rem); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+  .sec-head {
+    font-size: 0.63rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); margin: 0.85rem 0 0.45rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sec-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  .stat-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-name { flex: 1; font-size: clamp(0.86rem, 2.4vw, 0.98rem); font-weight: 700; color: var(--text); }
+  .bar-track { width: clamp(60px, 12vw, 88px); height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+  .bar-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width 0.4s ease; }
+  .stat-qty { font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500; color: var(--green); min-width: 24px; text-align: right; }
+  .stat-rev { font-family: 'DM Mono', monospace; font-size: 0.74rem; color: var(--muted); min-width: 46px; text-align: right; }
+
+  .toast {
+    position: fixed;
+    bottom: calc(var(--chart-h, 130px) + env(safe-area-inset-bottom, 0px) + 1rem);
+    left: 50%;
+    max-width: calc(100vw - 2rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    transform: translateX(-50%) translateY(70px);
+    background: var(--green); color: white; padding: 0.55rem 1.2rem;
+    border-radius: 30px; font-size: clamp(0.82rem, 2.2vw, 0.95rem); font-weight: 800;
+    transition: transform 0.28s ease, opacity 0.28s ease; z-index: 200;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    pointer-events: none;
+    opacity: 0;
+    visibility: hidden;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; }
+
+  /* ── Persistent bottom chart bar (--chart-h on :root for toast + bar) ── */
+  .chart-bar {
+    flex-shrink: 0;
+    height: calc(var(--chart-h) + env(safe-area-inset-bottom, 0px));
+    min-height: calc(var(--chart-h) + env(safe-area-inset-bottom, 0px));
+    background: #fff;
+    border-top: 1.5px solid var(--border);
+    padding: 8px 12px calc(6px + env(safe-area-inset-bottom, 0px));
+    display: flex;
+    flex-direction: column;
+  }
+  .chart-label {
+    font-size: clamp(0.58rem, 1.8vw, 0.68rem); font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 6px; flex-shrink: 0;
+  }
+  .chart-canvas-wrap {
+    flex: 1;
+    position: relative;
+    min-height: 0;
+  }
+  #barchart {
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: pan-y;
+  }
+
+  /* iPad & large tablets: arm's-length readability + landscape two-column queue */
+  @media (min-width: 768px) {
+    :root { --chart-h: 152px; }
+    body { font-size: 17px; }
+    .orders-list { padding: 1rem 1.25rem; }
+    header { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+  }
+
+  /* iPad Air 4 landscape: 1180 CSS px wide */
+  @media (min-width: 768px) and (orientation: landscape) {
+    :root { --chart-h: 150px; }
+    body { font-size: 18px; }
+    header { padding: 0.65rem 1.25rem; }
+    .hbrand h1 { font-size: 1.35rem; }
+    .tabs { gap: 1px; }
+    .tab { min-height: 54px; font-size: 0.82rem; }
+    .orders-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-content: start;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+    }
+    .ocard { margin-bottom: 0; }
+    .ohead { padding: 0.9rem 1.15rem; }
+    .oname { font-size: 1.25rem; }
+    .done-btn { min-height: 48px; font-size: 0.88rem; padding: 0.55rem 1.1rem; }
+    .an-wrap { padding: 1rem 1.5rem; }
+    .an-grid { gap: 14px; }
+    .an-card { padding: 1rem 0.6rem; border-radius: 16px; }
+    .an-val { font-size: 1.85rem; }
+  }
+
+  @media (min-width: 1024px) and (orientation: landscape) {
+    :root { --chart-h: 160px; }
+    .tab { min-height: 56px; }
+  }
+
+  @media (pointer: coarse) {
+    .done-btn { min-height: 48px; }
+    .tab { min-height: max(52px, 44px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ocard { animation: none; }
+    .toast { transition: none; }
+    .bar-fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbrand">
+    <span style="font-size:1.3rem">☕</span>
+    <div>
+      <h1>Maple South</h1>
+      <p id="hdate">Kitchen</p>
+    </div>
+  </div>
+  <div class="hright">
+    <div class="chip"><b id="h-active">0</b> orders</div>
+    <div class="chip"><b id="h-rev">$0</b> total</div>
+    <div class="dot" id="conn-dot"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" id="tab-active" onclick="setTab('active')">
+    Active <span class="badge" id="b-active">0</span>
+  </div>
+  <div class="tab" id="tab-done" onclick="setTab('done')">
+    Done <span class="badge" id="b-done">0</span>
+  </div>
+  <div class="tab" id="tab-analytics" onclick="setTab('analytics')">
+    Analytics
+  </div>
+</div>
+
+<div class="panel show" id="panel-active">
+  <div class="orders-list" id="list-active"></div>
+</div>
+<div class="panel" id="panel-done">
+  <div class="orders-list" id="list-done"></div>
+</div>
+<div class="panel" id="panel-analytics">
+  <div class="an-wrap">
+    <div class="an-grid">
+      <div class="an-card"><div class="an-val" id="an-orders">0</div><div class="an-label">Completed</div></div>
+      <div class="an-card"><div class="an-val" id="an-items">0</div><div class="an-label">Items Sold</div></div>
+      <div class="an-card"><div class="an-val" id="an-rev">$0</div><div class="an-label">Revenue</div></div>
+    </div>
+    <div class="sec-head">Drinks</div>
+    <div id="an-drinks"></div>
+    <div class="sec-head">Bakery</div>
+    <div id="an-food"></div>
+  </div>
+</div>
+
+<div class="chart-bar">
+  <div class="chart-label">Items sold — all orders</div>
+  <div class="chart-canvas-wrap">
+    <canvas id="barchart"></canvas>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let db = null;
+(function initSupabase() {
+  if (typeof supabase === 'undefined') return;
+  if (window.__MS_CONFIG_FAILED__) return;
+  const c = window.__MS_SUPABASE__ || {};
+  const url = String(c.url || '').trim();
+  const key = String(c.anonKey || c.anon_key || c.anon || '').trim();
+  const ph = /YOUR_SUPABASE/i.test(url) || /YOUR_SUPABASE/i.test(key);
+  if (!url || !key || ph) return;
+  try {
+    db = supabase.createClient(url, key);
+  } catch (e) {
+    console.warn('Maple South: Supabase init failed', e);
+  }
+})();
+
+// Keep this in sync with your menu in index.html
+const DRINK_NAMES = new Set(['Iced Latte','Mocha','Pour Over','Hot Latte','Cortado']);
+
+let orders = [];
+let currentTab = 'active';
+let orderNums = {};
+let orderCounter = 1;
+
+function setTab(t) {
+  currentTab = t;
+  ['active','done','analytics'].forEach(id => {
+    document.getElementById('tab-' + id).classList.toggle('active', id === t);
+    document.getElementById('panel-' + id).classList.toggle('show', id === t);
+  });
+  if (t === 'analytics') renderAnalytics();
+}
+
+function fmt(ts) { return new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }
+function fmtDate(d) { return d.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' }); }
+
+const TRACKER_PER_ORDER = 5;
+
+function isToday(ts) {
+  const d = new Date(ts);
+  const n = new Date();
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+
+/** Header $ chip: $5 for each order placed today (any status). */
+function trackerDollarsToday() {
+  return orders.filter(o => isToday(o.created_at)).length * TRACKER_PER_ORDER;
+}
+
+function elapsedMinutes(ts) {
+  return Math.floor((Date.now() - new Date(ts)) / 60000);
+}
+
+function buildItemsHtml(items) {
+  if (!items || !items.length) return '';
+  return items.map(i => `<span class="oitem-name">${i.name}</span>`).join(', ');
+}
+
+function ocardClass(order) {
+  let c = 'ocard';
+  if (order.status === 'done') c += ' done';
+  else if (elapsedMinutes(order.created_at) >= 8) c += ' urgent';
+  return c;
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+function buildCard(order) {
+  const num = orderNums[order.id] || '?';
+  const done = order.status === 'done';
+  const items = buildItemsHtml(order.items);
+  const notes = order.notes ? `<div class="onotes">${order.notes}</div>` : '';
+  const btn = done
+    ? `<button class="done-btn undo" onclick="toggleDone('${order.id}',false)">Undo</button>`
+    : `<button class="done-btn" onclick="toggleDone('${order.id}',true)">Done</button>`;
+  return `
+    <div class="ohead">
+      <div class="ohead-left">
+        <div class="ohead-top">
+          <span class="oname">${order.customer_name}</span>
+          <span class="onum">#${String(num).padStart(2,'0')}</span>
+          <span class="otime">${fmt(order.created_at)}</span>
+        </div>
+        <div class="ohead-bottom">${items}</div>
+      </div>
+      ${btn}
+    </div>
+    ${notes}`;
+}
+
+function renderList(listId, list) {
+  const el = document.getElementById(listId);
+  if (list.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  const keep = new Set(list.map(o => o.id));
+  el.querySelectorAll('.ocard').forEach(c => { if (!keep.has(c.dataset.id)) c.remove(); });
+  list.forEach(order => {
+    let card = el.querySelector(`[data-id="${order.id}"]`);
+    if (card) {
+      card.className = ocardClass(order);
+      card.innerHTML = buildCard(order);
+    } else {
+      card = document.createElement('div');
+      card.className = ocardClass(order);
+      card.dataset.id = order.id;
+      card.innerHTML = buildCard(order);
+      el.prepend(card);
+    }
+  });
+}
+
+// ── Bottom bar chart ──────────────────────────────
+// Counts items from ALL orders (pending + done) so barista sees full picture
+let chartAnimFrame = null;
+let chartTargets = [];   // target heights [0..1]
+let chartCurrent = [];   // animated heights [0..1]
+let chartLabels  = [];
+let chartColors  = [];
+
+const BAR_GREEN  = '#1D7A2F';
+const BAR_YELLOW = '#C9A000';
+const BAR_MUTED  = '#D8E8DA';
+const TEXT_COLOR = '#6B8F6E';
+const TEXT_BRIGHT= '#1A2E1C';
+
+function buildTally() {
+  // count across ALL orders
+  const tally = {};
+  orders.forEach(order => {
+    (order.items || []).forEach(item => {
+      tally[item.name] = (tally[item.name] || 0) + item.qty;
+    });
+  });
+  return tally;
+}
+
+function renderChart() {
+  const canvas = document.getElementById('barchart');
+  if (!canvas) return;
+
+  const tally = buildTally();
+  const entries = Object.entries(tally).sort((a, b) => b[1] - a[1]);
+
+  if (entries.length === 0) {
+    // draw empty state
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth; const H = canvas.offsetHeight;
+    canvas.width = W; canvas.height = H;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.font = '600 11px Nunito, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('No orders yet', W / 2, H / 2 + 4);
+    return;
+  }
+
+  const maxQty = Math.max(1, ...entries.map(e => e[1]));
+  const newTargets = entries.map(e => e[1] / maxQty);
+  const newLabels  = entries.map(e => e[0]);
+  const newColors = entries.map(e => DRINK_NAMES.has(e[0]) ? BAR_GREEN : BAR_YELLOW);
+  const newCounts = entries.map(e => e[1]);
+
+  // Resize arrays if menu changed
+  if (chartTargets.length !== entries.length) {
+    chartCurrent = newTargets.map(() => 0);
+  }
+  chartTargets = newTargets;
+  chartLabels  = newLabels;
+  chartColors  = newColors;
+
+  if (chartAnimFrame) cancelAnimationFrame(chartAnimFrame);
+
+  function draw() {
+    const canvas = document.getElementById('barchart');
+    if (!canvas) return;
+    const W = canvas.offsetWidth;
+    const H = canvas.offsetHeight;
+    if (W === 0 || H === 0) { chartAnimFrame = requestAnimationFrame(draw); return; }
+    canvas.width  = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    ctx.clearRect(0, 0, W, H);
+
+    const n = chartTargets.length;
+    const padX = 4;
+    const totalW = W - padX * 2;
+    const barW = Math.max(4, Math.floor(totalW / n) - 3);
+    const gap  = (totalW - barW * n) / Math.max(n - 1, 1);
+    const labelH = 13;
+    const countH = 12;
+    const chartH = H - labelH - countH - 4;
+
+    let needsAnim = false;
+
+    for (let i = 0; i < n; i++) {
+      // ease toward target
+      const diff = chartTargets[i] - chartCurrent[i];
+      if (Math.abs(diff) > 0.002) {
+        chartCurrent[i] += diff * 0.12;
+        needsAnim = true;
+      } else {
+        chartCurrent[i] = chartTargets[i];
+      }
+
+      const x = padX + i * (barW + gap);
+      const bh = Math.max(2, Math.round(chartCurrent[i] * chartH));
+      const y  = countH + (chartH - bh);
+
+      // bar background track
+      ctx.fillStyle = BAR_MUTED;
+      ctx.beginPath();
+      ctx.roundRect(x, countH, barW, chartH, 3);
+      ctx.fill();
+
+      // filled bar
+      ctx.fillStyle = chartColors[i];
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW, bh, 3);
+      ctx.fill();
+
+      // count above bar
+      if (barW >= 14) {
+        ctx.fillStyle = TEXT_BRIGHT;
+        ctx.font = `700 ${Math.min(11, barW - 2)}px "DM Mono", monospace`;
+        ctx.textAlign = 'center';
+        ctx.fillText(newCounts[i], x + barW / 2, y - 2);
+      }
+
+      // label below
+      if (barW >= 14) {
+        ctx.fillStyle = TEXT_COLOR;
+        ctx.font = `700 ${Math.min(10, barW - 2)}px Nunito, sans-serif`;
+        ctx.textAlign = 'center';
+        // truncate label to fit
+        let label = chartLabels[i];
+        const maxChars = Math.floor(barW / 5.5);
+        if (label.length > maxChars) label = label.slice(0, maxChars - 1) + '…';
+        ctx.fillText(label, x + barW / 2, H - 1);
+      }
+    }
+
+    if (needsAnim) chartAnimFrame = requestAnimationFrame(draw);
+  }
+
+  draw();
+}
+
+function renderOrders() {
+  const active = orders.filter(o => o.status === 'pending');
+  const done   = orders.filter(o => o.status === 'done');
+
+  document.getElementById('h-active').textContent  = orders.length;
+  document.getElementById('b-active').textContent  = active.length;
+  document.getElementById('b-done').textContent    = done.length;
+  document.getElementById('h-rev').textContent     = '$' + trackerDollarsToday();
+
+  renderList('list-active', active);
+  renderList('list-done',   done);
+  renderChart();
+  if (currentTab === 'analytics') renderAnalytics();
+}
+
+function renderAnalytics() {
+  const done = orders.filter(o => o.status === 'done');
+  const rev = done.reduce((s, o) => s + (o.total || 0), 0);
+  const tally = {};
+  let totalItems = 0;
+
+  done.forEach(order => {
+    (order.items || []).forEach(item => {
+      if (!tally[item.name]) tally[item.name] = { qty: 0, rev: 0, isDrink: DRINK_NAMES.has(item.name) };
+      tally[item.name].qty += item.qty;
+      tally[item.name].rev += item.price * item.qty;
+      totalItems += item.qty;
+    });
+  });
+
+  document.getElementById('an-orders').textContent = done.length;
+  document.getElementById('an-items').textContent  = totalItems;
+  document.getElementById('an-rev').textContent    = '$' + rev.toFixed(0);
+
+  const maxQty = Math.max(1, ...Object.values(tally).map(v => v.qty));
+
+  function buildRows(entries) {
+    if (!entries.length) return '<div style="color:var(--muted);font-size:0.8rem;padding:0.4rem 0;font-weight:600">Nothing yet</div>';
+    return entries.map(([name, d]) => `
+      <div class="stat-row">
+        <div class="stat-name">${name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.qty/maxQty*100)}%"></div></div>
+        <div class="stat-qty">${d.qty}</div>
+        <div class="stat-rev">$${d.rev.toFixed(2)}</div>
+      </div>`).join('');
+  }
+
+  const sorted = Object.entries(tally).sort((a,b) => b[1].qty - a[1].qty);
+  document.getElementById('an-drinks').innerHTML = buildRows(sorted.filter(([,v]) =>  v.isDrink));
+  document.getElementById('an-food').innerHTML   = buildRows(sorted.filter(([,v]) => !v.isDrink));
+}
+
+async function toggleDone(id, done) {
+  if (!db) { toast('Supabase not configured'); return; }
+  const { error } = await db.from('orders').update({ status: done ? 'done' : 'pending' }).eq('id', id);
+  if (error) { toast('Error — try again'); return; }
+  const o = orders.find(x => x.id === id);
+  if (o) o.status = done ? 'done' : 'pending';
+  renderOrders();
+}
+
+async function load() {
+  if (!db) {
+    console.warn(
+      window.__MS_CONFIG_FAILED__
+        ? 'config.js did not load — use a local server (npx serve .) in this folder.'
+        : 'Supabase not configured — edit config.js'
+    );
+    return;
+  }
+  const { data, error } = await db.from('orders').select('*').order('created_at', { ascending: true });
+  if (error) { console.error(error); return; }
+  orders = data || [];
+  orders.forEach((o, i) => { orderNums[o.id] = i + 1; orderCounter = i + 2; });
+  renderOrders();
+}
+
+function subscribe() {
+  if (!db) return;
+  db.channel('ms-dash')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, p => {
+      if (p.eventType === 'INSERT') {
+        orderNums[p.new.id] = orderCounter++;
+        orders.push(p.new);
+        renderOrders();
+      } else if (p.eventType === 'UPDATE') {
+        const i = orders.findIndex(o => o.id === p.new.id);
+        if (i !== -1) orders[i] = p.new;
+        renderOrders();
+      } else if (p.eventType === 'DELETE') {
+        orders = orders.filter(o => o.id !== p.old.id);
+        renderOrders();
+      }
+    })
+    .subscribe(s => document.getElementById('conn-dot').classList.toggle('off', s !== 'SUBSCRIBED'));
+}
+
+function tickHeaderClock() {
+  const d = new Date();
+  document.getElementById('hdate').textContent =
+    fmtDate(d) + ' · ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+tickHeaderClock();
+setInterval(tickHeaderClock, 30000);
+
+load();
+subscribe();
+
+// Redraw chart if iPad rotates
+new ResizeObserver(() => renderChart()).observe(document.getElementById('barchart'));
+</script>
+</body>
+</html>
