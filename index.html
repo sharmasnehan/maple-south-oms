@@ -412,9 +412,71 @@
     .logo-img { max-width: min(200px, 52vw); }
     .success-mascot { width: clamp(100px, 35vw, 150px); height: clamp(100px, 35vw, 150px); }
   }
+
+  /* Venmo payment banner */
+  .venmo-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    background: var(--green);
+    color: #fff;
+    padding: 0.65rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .venmo-banner.hidden { display: none; }
+  .venmo-banner__text {
+    text-align: center;
+  }
+  .venmo-banner__text b {
+    color: var(--yellow);
+  }
+  .venmo-banner__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--yellow);
+    color: var(--green-dark);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 800;
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    text-decoration: none;
+    border: 2px solid var(--green-dark);
+    box-shadow: 2px 2px 0 var(--green-dark);
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .venmo-banner__btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 1px 1px 0 var(--green-dark);
+  }
+  .venmo-banner__skip {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+  }
+  .venmo-banner__skip:hover,
+  .venmo-banner__skip:focus {
+    color: #fff;
+  }
 </style>
 </head>
 <body>
+
+<div class="venmo-banner" id="venmo-banner">
+  <span class="venmo-banner__text">Pay <b>$5</b> on Venmo before ordering</span>
+  <a class="venmo-banner__btn" href="https://venmo.com/?txn=pay&recipients=maple-south-test&amount=5&note=Maple%20South%20Coffee" target="_blank" rel="noopener">Pay on Venmo</a>
+  <button class="venmo-banner__skip" id="venmo-skip" type="button" aria-label="Skip payment">Skip</button>
+</div>
 
 <header>
   <div class="header-decor header-decor--left" aria-hidden="true">
@@ -506,9 +568,9 @@ document.getElementById('logo-img').src = 'data:image/png;base64,iVBORw0KGgoAAAA
 const MENU = {
   drinks: [
     { id: 'd1', name: 'Iced Latte', desc: 'Espresso, cold milk, ice', price: 5.50, emoji: '🧊' },
-    { id: 'd2', name: 'Mocha', desc: 'Chocolate, espresso & milk', price: 5.75, emoji: '🍫' },
+    { id: 'd2', name: 'Chai', desc: 'Spiced tea with steamed milk', price: 5.00, emoji: '🍵' },
     { id: 'd3', name: 'Pour Over', desc: 'Single-origin, brewed to order', price: 4.50, emoji: '☕' },
-    { id: 'd4', name: 'Hot Latte', desc: 'Espresso & steamed milk', price: 5.25, emoji: '🥛' },
+    { id: 'd4', name: 'Latte', desc: 'Espresso & steamed milk', price: 5.25, emoji: '🥛' },
     { id: 'd5', name: 'Cortado', desc: 'Espresso cut with warm milk', price: 4.75, emoji: '☕' },
   ]
 };
@@ -612,6 +674,11 @@ function resetForm() {
 }
 
 renderMenu(MENU.drinks, 'drinks-grid');
+
+// Venmo banner skip (session only — reappears on refresh)
+document.getElementById('venmo-skip').addEventListener('click', function() {
+  document.getElementById('venmo-banner').classList.add('hidden');
+});
 </script>
 </body>
 </html>
