@@ -209,15 +209,33 @@
   .sec-head::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
   .stat-row {
-    display: flex; align-items: center; gap: 8px;
-    padding: 0.5rem 0; border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
   }
   .stat-row:last-child { border-bottom: none; }
+  .stat-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 0.6rem 0; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .stat-header:active { opacity: 0.7; }
+  .stat-arrow {
+    font-size: 0.7rem; color: var(--muted); transition: transform 0.2s; flex-shrink: 0;
+  }
+  .stat-row.open .stat-arrow { transform: rotate(90deg); }
   .stat-name { flex: 1; font-size: clamp(0.86rem, 2.4vw, 0.98rem); font-weight: 700; color: var(--text); }
   .bar-track { width: clamp(60px, 12vw, 88px); height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
   .bar-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width 0.4s ease; }
   .stat-qty { font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500; color: var(--green); min-width: 24px; text-align: right; }
-  .stat-rev { font-family: 'DM Mono', monospace; font-size: 0.74rem; color: var(--muted); min-width: 46px; text-align: right; }
+  .stat-details {
+    display: none; padding: 0 0 0.5rem 1.2rem;
+  }
+  .stat-row.open .stat-details { display: block; }
+  .stat-detail {
+    display: flex; gap: 0.5rem; padding: 0.25rem 0;
+    font-size: clamp(0.78rem, 2vw, 0.88rem); color: var(--muted);
+  }
+  .stat-detail-name { font-weight: 600; color: var(--text); }
+  .stat-detail-time { font-family: 'DM Mono', monospace; }
 
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.5);
@@ -388,8 +406,6 @@
     </div>
     <div class="sec-head">Drinks</div>
     <div id="an-drinks"></div>
-    <div class="sec-head">Bakery</div>
-    <div id="an-food"></div>
   </div>
 </div>
 
@@ -458,9 +474,9 @@ function isToday(ts) {
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
 
-/** Header $ chip: $5 for each order placed today (any status). */
+/** Header $ chip: $5 for each order (all orders, not just today). */
 function trackerDollarsToday() {
-  return orders.filter(o => isToday(o.created_at)).length * TRACKER_PER_ORDER;
+  return orders.length * TRACKER_PER_ORDER;
 }
 
 function elapsedMinutes(ts) {
@@ -632,8 +648,8 @@ function renderChart() {
       // filled bar (gradient: yellow → orange → green)
       const grad = ctx.createLinearGradient(x, y + bh, x, y);
       grad.addColorStop(0, '#1D7A2F');   // green at bottom
-      grad.addColorStop(0.5, '#E67E22'); // orange in middle
-      grad.addColorStop(1, '#F5C800');   // yellow at top
+      grad.addColorStop(0.5, '#F5C800'); // yellow in middle
+      grad.addColorStop(1, '#3498DB');   // blue at top
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.roundRect(x, y, barW, bh, 3);
@@ -683,39 +699,47 @@ function renderOrders() {
 
 function renderAnalytics() {
   const done = orders.filter(o => o.status === 'done');
-  const rev = done.reduce((s, o) => s + (o.total || 0), 0);
   const tally = {};
   let totalItems = 0;
 
   done.forEach(order => {
     (order.items || []).forEach(item => {
-      if (!tally[item.name]) tally[item.name] = { qty: 0, rev: 0, isDrink: DRINK_NAMES.has(item.name) };
+      if (!tally[item.name]) tally[item.name] = { qty: 0, orders: [] };
       tally[item.name].qty += item.qty;
-      tally[item.name].rev += item.price * item.qty;
+      tally[item.name].orders.push({ name: order.customer_name, time: order.created_at });
       totalItems += item.qty;
     });
   });
 
+  const totalRev = done.length * TRACKER_PER_ORDER;
+
   document.getElementById('an-orders').textContent = done.length;
   document.getElementById('an-items').textContent  = totalItems;
-  document.getElementById('an-rev').textContent    = '$' + rev.toFixed(0);
+  document.getElementById('an-rev').textContent    = '$' + totalRev;
 
   const maxQty = Math.max(1, ...Object.values(tally).map(v => v.qty));
 
   function buildRows(entries) {
     if (!entries.length) return '<div style="color:var(--muted);font-size:0.8rem;padding:0.4rem 0;font-weight:600">Nothing yet</div>';
-    return entries.map(([name, d]) => `
-      <div class="stat-row">
-        <div class="stat-name">${name}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.qty/maxQty*100)}%"></div></div>
-        <div class="stat-qty">${d.qty}</div>
-        <div class="stat-rev">$${d.rev.toFixed(2)}</div>
-      </div>`).join('');
+    return entries.map(([name, d]) => {
+      const details = d.orders.map(o => 
+        `<div class="stat-detail"><span class="stat-detail-name">${o.name}</span><span class="stat-detail-time">${fmt(o.time)}</span></div>`
+      ).join('');
+      return `
+      <div class="stat-row" onclick="this.classList.toggle('open')">
+        <div class="stat-header">
+          <span class="stat-arrow">▶</span>
+          <div class="stat-name">${name}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.qty/maxQty*100)}%"></div></div>
+          <div class="stat-qty">${d.qty}</div>
+        </div>
+        <div class="stat-details">${details}</div>
+      </div>`;
+    }).join('');
   }
 
   const sorted = Object.entries(tally).sort((a,b) => b[1].qty - a[1].qty);
-  document.getElementById('an-drinks').innerHTML = buildRows(sorted.filter(([,v]) =>  v.isDrink));
-  document.getElementById('an-food').innerHTML   = buildRows(sorted.filter(([,v]) => !v.isDrink));
+  document.getElementById('an-drinks').innerHTML = buildRows(sorted);
 }
 
 async function toggleDone(id, done) {
