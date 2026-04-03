@@ -4,14 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1D7A2F">
+<meta name="color-scheme" content="light">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Maple South — Kitchen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Graduate&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js" onerror="window.__MS_CONFIG_FAILED__=true"></script>
 <style>
   :root {
+    color-scheme: light;
     --chart-h: 130px;
     --green: #1D7A2F;
     --green-dark: #155222;
@@ -33,6 +38,7 @@
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
     height: 100%;
+    overscroll-behavior-y: contain;
   }
   body {
     background: var(--surface);
@@ -79,6 +85,22 @@
     font-family: 'DM Mono', monospace;
   }
   .chip b { color: var(--yellow); }
+  .reset-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 0.28rem 0.6rem;
+    min-height: 36px;
+    font-size: clamp(0.65rem, 2vw, 0.72rem);
+    color: rgba(255,255,255,0.7);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+  }
+  .reset-btn:active { background: rgba(255,255,255,0.25); }
   .dot {
     width: 10px; height: 10px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 6px var(--yellow);
     flex-shrink: 0; align-self: center;
@@ -306,6 +328,7 @@
   <div class="hright">
     <div class="chip"><b id="h-active">0</b> orders</div>
     <div class="chip"><b id="h-rev">$0</b> total</div>
+    <button class="reset-btn" onclick="resetDay()">Reset</button>
     <div class="dot" id="conn-dot"></div>
   </div>
 </header>
@@ -665,6 +688,17 @@ async function toggleDone(id, done) {
   if (error) { toast('Error — try again'); return; }
   const o = orders.find(x => x.id === id);
   if (o) o.status = done ? 'done' : 'pending';
+  renderOrders();
+}
+
+async function resetDay() {
+  if (!confirm('Clear all orders and reset totals?')) return;
+  if (!db) { toast('Supabase not configured'); return; }
+  const { error } = await db.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+  if (error) { toast('Error — try again'); return; }
+  orders = [];
+  orderNums = {};
+  orderCounter = 1;
   renderOrders();
 }
 
