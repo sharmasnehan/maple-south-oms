@@ -86,21 +86,21 @@
   }
   .chip b { color: var(--yellow); }
   .reset-btn {
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 20px;
-    padding: 0.28rem 0.6rem;
+    background: var(--danger);
+    border: none;
+    border-radius: 6px;
+    padding: 0.32rem 0.65rem;
     min-height: 36px;
     font-size: clamp(0.65rem, 2vw, 0.72rem);
-    color: rgba(255,255,255,0.7);
+    color: white;
     font-family: 'Nunito', sans-serif;
     font-weight: 700;
     cursor: pointer;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
-    transition: background 0.15s;
+    transition: opacity 0.15s;
   }
-  .reset-btn:active { background: rgba(255,255,255,0.25); }
+  .reset-btn:active { opacity: 0.7; }
   .dot {
     width: 10px; height: 10px; border-radius: 50%; background: var(--yellow); box-shadow: 0 0 6px var(--yellow);
     flex-shrink: 0; align-self: center;
@@ -181,7 +181,7 @@
     border-radius: 4px; font-size: clamp(0.78rem, 2.2vw, 0.9rem); color: #8B6F00; font-style: italic; line-height: 1.35;
   }
   .done-btn {
-    padding: 0.5rem 1rem; min-height: 44px; background: var(--green); color: white; border: none;
+    padding: 0.5rem 1rem; min-height: 44px; background: white; color: var(--green); border: 2px solid var(--green);
     border-radius: 10px; font-family: 'Nunito', sans-serif; font-size: clamp(0.82rem, 2.2vw, 0.9rem); font-weight: 800;
     cursor: pointer; transition: opacity 0.12s, transform 0.1s; -webkit-tap-highlight-color: transparent;
     touch-action: manipulation; -webkit-touch-callout: none; flex-shrink: 0;
@@ -220,6 +220,36 @@
   .bar-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width 0.4s ease; }
   .stat-qty { font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500; color: var(--green); min-width: 24px; text-align: right; }
   .stat-rev { font-family: 'DM Mono', monospace; font-size: 0.74rem; color: var(--muted); min-width: 46px; text-align: right; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 300; opacity: 0; visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+  }
+  .modal-overlay.show { opacity: 1; visibility: visible; }
+  .modal {
+    background: var(--card); border-radius: 16px; padding: 1.5rem;
+    max-width: 320px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    text-align: center;
+  }
+  .modal-title {
+    font-family: 'Graduate', serif; font-size: 1.25rem; color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+  .modal-text {
+    font-size: 0.9rem; color: var(--muted); margin-bottom: 1.25rem; line-height: 1.4;
+  }
+  .modal-btns { display: flex; gap: 0.75rem; }
+  .modal-btn {
+    flex: 1; padding: 0.7rem 1rem; border: none; border-radius: 10px;
+    font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 800;
+    cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .modal-btn:active { opacity: 0.7; }
+  .modal-btn.cancel { background: var(--border); color: var(--muted); }
+  .modal-btn.confirm { background: var(--danger); color: white; }
 
   .toast {
     position: fixed;
@@ -319,15 +349,15 @@
 
 <header>
   <div class="hbrand">
-    <span style="font-size:1.3rem">☕</span>
+    <img src="maple-south-logo.png" alt="Maple South" style="height:32px;width:auto;">
     <div>
       <h1>Maple South</h1>
       <p id="hdate">Kitchen</p>
     </div>
   </div>
   <div class="hright">
-    <div class="chip"><b id="h-active">0</b> orders</div>
-    <div class="chip"><b id="h-rev">$0</b> total</div>
+    <div class="chip"><b id="h-active">0</b>&nbsp;orders</div>
+    <div class="chip"><b id="h-rev">$0</b>&nbsp;total</div>
     <button class="reset-btn" onclick="resetDay()">Reset</button>
     <div class="dot" id="conn-dot"></div>
   </div>
@@ -362,6 +392,17 @@
     <div id="an-drinks"></div>
     <div class="sec-head">Bakery</div>
     <div id="an-food"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="reset-modal">
+  <div class="modal">
+    <div class="modal-title">Reset all orders?</div>
+    <div class="modal-text">This will clear all orders and reset totals to zero.</div>
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeResetModal()">Cancel</button>
+      <button class="modal-btn confirm" onclick="confirmReset()">Reset</button>
+    </div>
   </div>
 </div>
 
@@ -499,10 +540,7 @@ let chartAnimFrame = null;
 let chartTargets = [];   // target heights [0..1]
 let chartCurrent = [];   // animated heights [0..1]
 let chartLabels  = [];
-let chartColors  = [];
 
-const BAR_GREEN  = '#1D7A2F';
-const BAR_YELLOW = '#C9A000';
 const BAR_MUTED  = '#D8E8DA';
 const TEXT_COLOR = '#6B8F6E';
 const TEXT_BRIGHT= '#1A2E1C';
@@ -541,7 +579,6 @@ function renderChart() {
   const maxQty = Math.max(1, ...entries.map(e => e[1]));
   const newTargets = entries.map(e => e[1] / maxQty);
   const newLabels  = entries.map(e => e[0]);
-  const newColors = entries.map(e => DRINK_NAMES.has(e[0]) ? BAR_GREEN : BAR_YELLOW);
   const newCounts = entries.map(e => e[1]);
 
   // Resize arrays if menu changed
@@ -550,7 +587,6 @@ function renderChart() {
   }
   chartTargets = newTargets;
   chartLabels  = newLabels;
-  chartColors  = newColors;
 
   if (chartAnimFrame) cancelAnimationFrame(chartAnimFrame);
 
@@ -597,8 +633,12 @@ function renderChart() {
       ctx.roundRect(x, countH, barW, chartH, 3);
       ctx.fill();
 
-      // filled bar
-      ctx.fillStyle = chartColors[i];
+      // filled bar (gradient: yellow → orange → green)
+      const grad = ctx.createLinearGradient(x, y + bh, x, y);
+      grad.addColorStop(0, '#1D7A2F');   // green at bottom
+      grad.addColorStop(0.5, '#E67E22'); // orange in middle
+      grad.addColorStop(1, '#F5C800');   // yellow at top
+      ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.roundRect(x, y, barW, bh, 3);
       ctx.fill();
@@ -691,8 +731,16 @@ async function toggleDone(id, done) {
   renderOrders();
 }
 
-async function resetDay() {
-  if (!confirm('Clear all orders and reset totals?')) return;
+function resetDay() {
+  document.getElementById('reset-modal').classList.add('show');
+}
+
+function closeResetModal() {
+  document.getElementById('reset-modal').classList.remove('show');
+}
+
+async function confirmReset() {
+  closeResetModal();
   if (!db) { toast('Supabase not configured'); return; }
   const { error } = await db.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   if (error) { toast('Error — try again'); return; }
