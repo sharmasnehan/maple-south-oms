@@ -415,6 +415,7 @@
 
   /* Venmo payment banner */
   .venmo-banner {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -422,7 +423,7 @@
     gap: 0.35rem 0.6rem;
     background: var(--green);
     color: #fff;
-    padding: 0.4rem 0.75rem;
+    padding: 0.4rem 1.75rem 0.4rem 0.75rem;
     font-size: 0.82rem;
     font-weight: 600;
   }
@@ -453,19 +454,20 @@
     transform: translate(1px, 1px);
     box-shadow: 1px 1px 0 var(--green-dark);
   }
-  .venmo-banner__skip {
+  .venmo-banner__close {
+    position: absolute;
+    top: 0.25rem;
+    right: 0.35rem;
     background: transparent;
     border: none;
-    color: rgba(255,255,255,0.7);
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-decoration: underline;
+    color: rgba(255,255,255,0.6);
+    font-size: 0.9rem;
+    line-height: 1;
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
+    padding: 0.15rem 0.3rem;
   }
-  .venmo-banner__skip:hover,
-  .venmo-banner__skip:focus {
+  .venmo-banner__close:hover,
+  .venmo-banner__close:focus {
     color: #fff;
   }
 </style>
@@ -475,7 +477,7 @@
 <div class="venmo-banner" id="venmo-banner">
   <span class="venmo-banner__text">Pay <b>$5</b> on Venmo before ordering</span>
   <a class="venmo-banner__btn" href="https://venmo.com/?txn=pay&recipients=maple-south-test&amount=5&note=Maple%20South%20Coffee" target="_blank" rel="noopener">Pay on Venmo</a>
-  <button class="venmo-banner__skip" id="venmo-skip" type="button" aria-label="Skip payment">Skip</button>
+  <button class="venmo-banner__close" id="venmo-close" type="button" aria-label="Close banner">&times;</button>
 </div>
 
 <header>
@@ -676,7 +678,7 @@ function resetForm() {
 renderMenu(MENU.drinks, 'drinks-grid');
 
 // Venmo banner skip (session only — reappears on refresh)
-document.getElementById('venmo-skip').addEventListener('click', function() {
+document.getElementById('venmo-close').addEventListener('click', function() {
   document.getElementById('venmo-banner').classList.add('hidden');
 });
 </script>
