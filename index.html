@@ -391,6 +391,9 @@
     line-height: 1.45;
   }
   .new-order-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.9rem 2rem;
     min-height: 48px;
     background: var(--yellow);
@@ -404,6 +407,7 @@
     box-shadow: 3px 3px 0 var(--green-dark);
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    text-decoration: none;
   }
 
   @media (max-width: 400px) {
@@ -413,72 +417,9 @@
     .success-mascot { width: clamp(100px, 35vw, 150px); height: clamp(100px, 35vw, 150px); }
   }
 
-  /* Venmo payment banner */
-  .venmo-banner {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.35rem 0.6rem;
-    background: var(--green);
-    color: #fff;
-    padding: 0.4rem 1.75rem 0.4rem 0.75rem;
-    font-size: 0.82rem;
-    font-weight: 600;
-  }
-  .venmo-banner.hidden { display: none; }
-  .venmo-banner__text {
-    text-align: center;
-  }
-  .venmo-banner__text b {
-    color: var(--yellow);
-  }
-  .venmo-banner__btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--yellow);
-    color: var(--green-dark);
-    font-family: 'Nunito', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 800;
-    padding: 0.4rem 0.85rem;
-    border-radius: 8px;
-    text-decoration: none;
-    border: 2px solid var(--green-dark);
-    box-shadow: 2px 2px 0 var(--green-dark);
-    transition: transform 0.1s, box-shadow 0.1s;
-  }
-  .venmo-banner__btn:active {
-    transform: translate(1px, 1px);
-    box-shadow: 1px 1px 0 var(--green-dark);
-  }
-  .venmo-banner__close {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.35rem;
-    background: transparent;
-    border: none;
-    color: rgba(255,255,255,0.6);
-    font-size: 0.9rem;
-    line-height: 1;
-    cursor: pointer;
-    padding: 0.15rem 0.3rem;
-  }
-  .venmo-banner__close:hover,
-  .venmo-banner__close:focus {
-    color: #fff;
-  }
 </style>
 </head>
 <body>
-
-<div class="venmo-banner" id="venmo-banner">
-  <span class="venmo-banner__text">Pay <b>$5</b> on Venmo before ordering</span>
-  <a class="venmo-banner__btn" href="https://venmo.com/?txn=pay&recipients=maple-south-test&amount=5&note=Maple%20South%20Coffee" target="_blank" rel="noopener">Pay on Venmo</a>
-  <button class="venmo-banner__close" id="venmo-close" type="button" aria-label="Close banner">&times;</button>
-</div>
 
 <header>
   <div class="header-decor header-decor--left" aria-hidden="true">
@@ -538,7 +479,7 @@
   <img class="success-mascot" id="success-mascot" src="" alt="Maple South">
   <h2 id="success-name">Order placed!</h2>
   <p id="success-details">Coming right up ✨</p>
-  <button class="new-order-btn" onclick="resetForm()">Come say hi</button>
+  <a class="new-order-btn" href="https://venmo.com/?txn=pay&recipients=maple-south-test&amount=5&note=Maple%20South%20Pop-up%204.4" target="_blank" rel="noopener">Tap here to pay 💸</a>
 </div>
 
 <script>
@@ -677,10 +618,6 @@ function resetForm() {
 
 renderMenu(MENU.drinks, 'drinks-grid');
 
-// Venmo banner skip (session only — reappears on refresh)
-document.getElementById('venmo-close').addEventListener('click', function() {
-  document.getElementById('venmo-banner').classList.add('hidden');
-});
 </script>
 </body>
 </html>
