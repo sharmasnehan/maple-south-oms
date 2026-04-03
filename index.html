@@ -463,7 +463,7 @@
 
 <div class="form-section">
   <div class="section-label" id="lbl-customer-name"><span class="section-label__text">Your Name</span></div>
-  <input class="form-input" type="text" id="customer-name" name="customer-name" autocomplete="given-name" enterkeyhint="next" inputmode="text" placeholder="First name for your order..." maxlength="40" aria-labelledby="lbl-customer-name">
+  <input class="form-input" type="text" id="customer-name" name="customer-name" autocomplete="given-name" enterkeyhint="next" inputmode="text" placeholder="" maxlength="40" aria-labelledby="lbl-customer-name">
 </div>
 
 <div class="form-section">
@@ -597,7 +597,7 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   document.getElementById('success-mascot').src = document.getElementById('logo-img').src;
   document.getElementById('success-name').textContent = 'Thanks, ' + name + '!';
   document.getElementById('success-details').textContent =
-    'One ' + drink.name + ' coming right up ✨';
+    drink.name + ' coming right up ✨';
   document.getElementById('success-screen').classList.add('show');
 });
 
