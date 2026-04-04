@@ -461,6 +461,11 @@
 
 <div class="wiggle-divider"></div>
 
+<div class="section-label"><span class="section-label__text">Bakery</span></div>
+<div class="menu-grid menu-grid--bakery" id="bakery-grid"></div>
+
+<div class="wiggle-divider"></div>
+
 <div class="form-section">
   <div class="section-label" id="lbl-customer-name"><span class="section-label__text">Your Name</span></div>
   <input class="form-input" type="text" id="customer-name" name="customer-name" autocomplete="given-name" enterkeyhint="next" inputmode="text" placeholder="" maxlength="40" aria-labelledby="lbl-customer-name">
@@ -479,7 +484,7 @@
   <img class="success-mascot" id="success-mascot" src="" alt="Maple South">
   <h2 id="success-name">Order placed!</h2>
   <p id="success-details">Coming right up ✨</p>
-  <a class="new-order-btn" href="https://venmo.com/?txn=pay&recipients=maple-south-test&amount=5&note=MapleSouth" target="_blank" rel="noopener">Tap here to pay 💸</a>
+  <a class="new-order-btn" id="venmo-link" href="https://venmo.com/?txn=pay&recipients=maple-south-test&amount=6&note=MapleSouth" target="_blank" rel="noopener">Tap here to pay 💸</a>
 </div>
 
 <script>
@@ -510,17 +515,25 @@ document.getElementById('logo-img').src = 'data:image/png;base64,iVBORw0KGgoAAAA
 
 const MENU = {
   drinks: [
-    { id: 'd1', name: 'Iced Latte', desc: 'Espresso, cold milk, ice', price: 5.50, emoji: '🧊' },
-    { id: 'd2', name: 'Chai', desc: 'Spiced tea with steamed milk', price: 5.00, emoji: '🍵' },
-    { id: 'd3', name: 'Pour Over', desc: 'Single-origin, brewed to order', price: 4.50, emoji: '☕' },
-    { id: 'd4', name: 'Latte', desc: 'Espresso & steamed milk', price: 5.25, emoji: '🥛' },
-    { id: 'd5', name: 'Cortado', desc: 'Espresso cut with warm milk', price: 4.75, emoji: '☕' },
+    { id: 'd1', name: 'Espresso', price: 6, emoji: '☕' },
+    { id: 'd2', name: 'Cortado', price: 6, emoji: '☕' },
+    { id: 'd3', name: 'Americano', price: 6, emoji: '☕' },
+    { id: 'd4', name: 'Latte (Hot)', price: 6, emoji: '🥛' },
+    { id: 'd5', name: 'Latte (Iced)', price: 6, emoji: '🧊' },
+    { id: 'd6', name: 'Chocolate Sichuan Latte', price: 6, emoji: '🌶️' },
+    { id: 'd7', name: 'Hot Honey Corn Latte (Iced)', price: 6, emoji: '🌽' },
+    { id: 'd8', name: 'Chai', price: 6, emoji: '🍵' },
+    { id: 'd9', name: 'Dirty Chai', price: 6, emoji: '🍵' },
+  ],
+  bakery: [
+    { id: 'b1', name: 'Yes', price: 4, emoji: '🥐' },
+    { id: 'b2', name: 'No', price: 0, emoji: '❌' },
   ]
 };
 
-const cart = {};
+const cart = { drink: null, bakery: null };
 
-function renderMenu(items, gridId) {
+function renderMenu(items, gridId, category) {
   const grid = document.getElementById(gridId);
   grid.innerHTML = '';
   items.forEach(item => {
@@ -533,26 +546,30 @@ function renderMenu(items, gridId) {
         <span class="item-name">${item.name}</span>
       </div>
     `;
-    card.addEventListener('click', () => toggleItem(item));
+    card.addEventListener('click', () => toggleItem(item, category));
     grid.appendChild(card);
   });
 }
 
-function toggleItem(item) {
+function toggleItem(item, category) {
   const card = document.getElementById('card-' + item.id);
-  if (cart[item.id]) {
-    delete cart[item.id];
+  const menuList = category === 'drinks' ? MENU.drinks : MENU.bakery;
+  const cartKey = category === 'drinks' ? 'drink' : 'bakery';
+  
+  if (cart[cartKey] && cart[cartKey].id === item.id) {
+    cart[cartKey] = null;
     card.classList.remove('selected');
     return;
   }
-  MENU.drinks.forEach(d => {
-    if (d.id !== item.id && cart[d.id]) {
-      delete cart[d.id];
-      const other = document.getElementById('card-' + d.id);
+  
+  menuList.forEach(i => {
+    if (cart[cartKey] && cart[cartKey].id === i.id) {
+      const other = document.getElementById('card-' + i.id);
       if (other) other.classList.remove('selected');
     }
   });
-  cart[item.id] = { ...item, qty: 1 };
+  
+  cart[cartKey] = { ...item };
   card.classList.add('selected');
 }
 
@@ -561,9 +578,10 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   const notes = document.getElementById('special-requests').value.trim();
   const errEl = document.getElementById('error-msg');
   errEl.textContent = '';
-  const items = Object.values(cart);
   if (!name) { errEl.textContent = 'Please enter your name!'; return; }
-  if (items.length === 0) { errEl.textContent = 'Please select a drink!'; return; }
+  if (!cart.drink) { errEl.textContent = 'Please select a drink!'; return; }
+  const items = [cart.drink];
+  if (cart.bakery && cart.bakery.price > 0) items.push(cart.bakery);
   if (!db) {
     errEl.textContent = window.__MS_CONFIG_FAILED__
       ? 'Can\'t load config.js. Run a local server in this folder (e.g. npx serve .) and open the http:// address.'
@@ -593,20 +611,30 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
     return;
   }
 
-  const drink = items[0];
+  const drink = cart.drink;
+  const bakery = cart.bakery && cart.bakery.price > 0 ? cart.bakery : null;
+  const total = drink.price + (bakery ? bakery.price : 0);
   document.getElementById('success-mascot').src = document.getElementById('logo-img').src;
   document.getElementById('success-name').textContent = 'Thanks, ' + name + '!';
-  document.getElementById('success-details').textContent =
-    drink.name + ' coming right up ✨';
+  let msg = drink.name;
+  if (bakery) msg += ' + pastry';
+  msg += ' coming right up ✨';
+  document.getElementById('success-details').textContent = msg;
+  document.getElementById('venmo-link').href = 'https://venmo.com/?txn=pay&recipients=maple-south-test&amount=' + total + '&note=MapleSouth';
   document.getElementById('success-screen').classList.add('show');
 });
 
 function resetForm() {
-  Object.keys(cart).forEach(id => {
-    delete cart[id];
-    const card = document.getElementById('card-' + id);
-    if (card) card.classList.remove('selected');
-  });
+  if (cart.drink) {
+    const drinkCard = document.getElementById('card-' + cart.drink.id);
+    if (drinkCard) drinkCard.classList.remove('selected');
+    cart.drink = null;
+  }
+  if (cart.bakery) {
+    const bakeryCard = document.getElementById('card-' + cart.bakery.id);
+    if (bakeryCard) bakeryCard.classList.remove('selected');
+    cart.bakery = null;
+  }
   document.getElementById('customer-name').value = '';
   document.getElementById('special-requests').value = '';
   document.getElementById('error-msg').textContent = '';
@@ -616,7 +644,8 @@ function resetForm() {
   document.getElementById('success-screen').classList.remove('show');
 }
 
-renderMenu(MENU.drinks, 'drinks-grid');
+renderMenu(MENU.drinks, 'drinks-grid', 'drinks');
+renderMenu(MENU.bakery, 'bakery-grid', 'bakery');
 
 </script>
 </body>
