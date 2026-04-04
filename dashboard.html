@@ -406,6 +406,8 @@
     </div>
     <div class="sec-head">Drinks</div>
     <div id="an-drinks"></div>
+    <div class="sec-head">Bakery</div>
+    <div id="an-bakery"></div>
   </div>
 </div>
 
@@ -447,7 +449,17 @@ let db = null;
 })();
 
 // Keep this in sync with your menu in index.html
-const DRINK_NAMES = new Set(['Iced Latte','Mocha','Pour Over','Hot Latte','Cortado']);
+const DRINK_NAMES = new Set([
+  'Espresso', 'Chocolate Sichuan Latte', 'Cortado', 'Hot Honey Corn Latte (Iced)',
+  'Americano', 'Chai', 'Latte (Hot)', 'Dirty Chai', 'Latte (Iced)',
+  'Iced Latte', 'Mocha', 'Pour Over', 'Hot Latte', 'Latte'
+]);
+
+// Display name overrides
+function displayName(name) {
+  if (name === 'Yes') return 'Pastry';
+  return name;
+}
 
 let orders = [];
 let currentTab = 'active';
@@ -485,7 +497,8 @@ function elapsedMinutes(ts) {
 
 function buildItemsHtml(items) {
   if (!items || !items.length) return '';
-  return items.map(i => `<span class="oitem-name">${i.name}</span>`).join(', ');
+  const names = items.map(i => displayName(i.name)).join(', ');
+  return `<span class="oitem-name">${names}</span>`;
 }
 
 function ocardClass(order) {
@@ -590,7 +603,7 @@ function renderChart() {
 
   const maxQty = Math.max(1, ...entries.map(e => e[1]));
   const newTargets = entries.map(e => e[1] / maxQty);
-  const newLabels  = entries.map(e => e[0]);
+  const newLabels  = entries.map(e => displayName(e[0]));
   const newCounts = entries.map(e => e[1]);
 
   // Resize arrays if menu changed
@@ -704,7 +717,7 @@ function renderAnalytics() {
 
   done.forEach(order => {
     (order.items || []).forEach(item => {
-      if (!tally[item.name]) tally[item.name] = { qty: 0, orders: [] };
+      if (!tally[item.name]) tally[item.name] = { qty: 0, orders: [], isDrink: DRINK_NAMES.has(item.name) };
       tally[item.name].qty += item.qty;
       tally[item.name].orders.push({ name: order.customer_name, time: order.created_at });
       totalItems += item.qty;
@@ -729,7 +742,7 @@ function renderAnalytics() {
       <div class="stat-row" onclick="this.classList.toggle('open')">
         <div class="stat-header">
           <span class="stat-arrow">▶</span>
-          <div class="stat-name">${name}</div>
+          <div class="stat-name">${displayName(name)}</div>
           <div class="bar-track"><div class="bar-fill" style="width:${Math.round(d.qty/maxQty*100)}%"></div></div>
           <div class="stat-qty">${d.qty}</div>
         </div>
@@ -739,7 +752,8 @@ function renderAnalytics() {
   }
 
   const sorted = Object.entries(tally).sort((a,b) => b[1].qty - a[1].qty);
-  document.getElementById('an-drinks').innerHTML = buildRows(sorted);
+  document.getElementById('an-drinks').innerHTML = buildRows(sorted.filter(([,v]) => v.isDrink));
+  document.getElementById('an-bakery').innerHTML = buildRows(sorted.filter(([,v]) => !v.isDrink));
 }
 
 async function toggleDone(id, done) {
