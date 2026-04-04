@@ -516,17 +516,14 @@ function setTab(t) {
 function fmt(ts) { return new Date(ts).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }); }
 function fmtDate(d) { return d.toLocaleDateString([], { weekday:'short', month:'short', day:'numeric' }); }
 
-const TRACKER_PER_ORDER = 5;
-
-function isToday(ts) {
-  const d = new Date(ts);
-  const n = new Date();
-  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+/** Calculate total revenue from order items */
+function calcOrderTotal(order) {
+  if (!order.items || !order.items.length) return 0;
+  return order.items.reduce((sum, item) => sum + (item.price || 0) * (item.qty || 1), 0);
 }
 
-/** Header $ chip: $5 for each order (all orders, not just today). */
-function trackerDollarsToday() {
-  return orders.length * TRACKER_PER_ORDER;
+function calcTotalRevenue() {
+  return orders.reduce((sum, order) => sum + calcOrderTotal(order), 0);
 }
 
 function elapsedMinutes(ts) {
@@ -740,7 +737,7 @@ function renderOrders() {
   document.getElementById('h-active').textContent  = orders.length;
   document.getElementById('b-active').textContent  = active.length;
   document.getElementById('b-done').textContent    = done.length;
-  document.getElementById('h-rev').textContent     = '$' + trackerDollarsToday();
+  document.getElementById('h-rev').textContent     = '$' + calcTotalRevenue();
 
   renderList('list-active', active);
   renderList('list-done',   done);
@@ -762,7 +759,7 @@ function renderAnalytics() {
     });
   });
 
-  const totalRev = done.length * TRACKER_PER_ORDER;
+  const totalRev = done.reduce((sum, order) => sum + calcOrderTotal(order), 0);
 
   document.getElementById('an-orders').textContent = done.length;
   document.getElementById('an-items').textContent  = totalItems;
