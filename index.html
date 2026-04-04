@@ -616,7 +616,6 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
 
   const drink = cart.drink;
   const bakery = cart.bakery && cart.bakery.price > 0 ? cart.bakery : null;
-  const total = (drink ? drink.price : 0) + (bakery ? bakery.price : 0);
   document.getElementById('success-mascot').src = document.getElementById('logo-img').src;
   document.getElementById('success-name').textContent = 'Thanks, ' + name + '!';
   let msg = '';
