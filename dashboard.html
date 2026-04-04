@@ -589,7 +589,7 @@ function renderList(listId, list) {
       card.className = ocardClass(order);
       card.dataset.id = order.id;
       card.innerHTML = buildCard(order);
-      el.prepend(card);
+      el.appendChild(card);
     }
   });
 }
