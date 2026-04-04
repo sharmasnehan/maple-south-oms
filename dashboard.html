@@ -267,6 +267,36 @@
   .modal-btn.cancel { background: var(--border); color: var(--muted); }
   .modal-btn.confirm { background: var(--danger); color: white; }
 
+  /* Password screen */
+  .password-screen {
+    position: fixed; inset: 0; background: var(--green-deep);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    z-index: 500; padding: 2rem;
+  }
+  .password-screen.hidden { display: none; }
+  .password-logo { height: 64px; margin-bottom: 1rem; }
+  .password-title {
+    font-family: 'Graduate', serif; font-size: 1.5rem; color: white;
+    margin-bottom: 0.5rem; letter-spacing: 0.04em;
+  }
+  .password-subtitle {
+    font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;
+  }
+  .password-input {
+    width: 100%; max-width: 200px; padding: 0.75rem 1rem;
+    font-family: 'DM Mono', monospace; font-size: 1.2rem; font-weight: 500;
+    text-align: center; letter-spacing: 0.2em;
+    border: 2px solid rgba(255,255,255,0.3); border-radius: 12px;
+    background: rgba(255,255,255,0.1); color: white;
+    outline: none; -webkit-appearance: none;
+  }
+  .password-input::placeholder { color: rgba(255,255,255,0.4); }
+  .password-input:focus { border-color: var(--yellow); }
+  .password-error {
+    margin-top: 0.75rem; font-size: 0.85rem; color: #ff6b6b;
+    min-height: 1.2em;
+  }
+
   .toast {
     position: fixed;
     bottom: calc(var(--chart-h, 130px) + env(safe-area-inset-bottom, 0px) + 1rem);
@@ -362,6 +392,14 @@
 </style>
 </head>
 <body>
+
+<div class="password-screen" id="password-screen">
+  <img src="maple-south-logo.png" alt="Maple South" class="password-logo">
+  <div class="password-title">Kitchen</div>
+  <div class="password-subtitle">Enter passcode to continue</div>
+  <input type="password" class="password-input" id="password-input" placeholder="••••" maxlength="10" autocomplete="off" inputmode="text">
+  <div class="password-error" id="password-error"></div>
+</div>
 
 <header>
   <div class="hbrand">
@@ -838,14 +876,45 @@ function tickHeaderClock() {
   document.getElementById('hdate').textContent =
     fmtDate(d) + ' · ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
-tickHeaderClock();
-setInterval(tickHeaderClock, 30000);
 
-load();
-subscribe();
+// Password protection
+const KITCHEN_PASS = '9A';
+const passScreen = document.getElementById('password-screen');
+const passInput = document.getElementById('password-input');
+const passError = document.getElementById('password-error');
 
-// Redraw chart if iPad rotates
-new ResizeObserver(() => renderChart()).observe(document.getElementById('barchart'));
+function checkPassword() {
+  if (passInput.value === KITCHEN_PASS) {
+    passScreen.classList.add('hidden');
+    sessionStorage.setItem('kitchen_auth', '1');
+    initApp();
+  } else if (passInput.value.length >= KITCHEN_PASS.length) {
+    passError.textContent = 'Incorrect passcode';
+    passInput.value = '';
+    passInput.focus();
+  }
+}
+
+passInput.addEventListener('input', checkPassword);
+passInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+function initApp() {
+  tickHeaderClock();
+  setInterval(tickHeaderClock, 30000);
+  load();
+  subscribe();
+  new ResizeObserver(() => renderChart()).observe(document.getElementById('barchart'));
+}
+
+// Check if already authenticated this session
+if (sessionStorage.getItem('kitchen_auth') === '1') {
+  passScreen.classList.add('hidden');
+  initApp();
+} else {
+  passInput.focus();
+}
 </script>
 </body>
 </html>
