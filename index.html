@@ -176,6 +176,35 @@
     background: var(--green-light);
     box-shadow: 2px 2px 0 var(--green);
   }
+  
+  .temp-toggle {
+    display: none;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    justify-content: center;
+  }
+  .temp-toggle.show {
+    display: flex;
+  }
+  .temp-btn {
+    padding: 0.35rem 0.75rem;
+    border: 2px solid var(--green-dark);
+    border-radius: 20px;
+    background: #fff;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .temp-btn:hover {
+    background: var(--green-light);
+  }
+  .temp-btn.active {
+    background: var(--yellow);
+    border-color: var(--green-dark);
+  }
+  
   .item-card.selected::after {
     content: '✓';
     position: absolute;
@@ -538,9 +567,9 @@ const MENU = {
     { id: 'd7', name: 'Hot Honey Corn Latte (Iced)', price: 6, emoji: '🌽' },
     { id: 'd3', name: 'Americano', price: 6, emoji: '🇺🇸' },
     { id: 'd8', name: 'Chai', price: 6, emoji: '🇮🇳' },
-    { id: 'd4', name: 'Latte (Hot)', price: 6, emoji: '🥛' },
+    { id: 'd4', name: 'Latte', price: 6, emoji: '🥛', hasTemp: true, variants: { hot: 'd4-hot', iced: 'd4-iced' } },
     { id: 'd9', name: 'Dirty Chai', price: 6, emoji: '😈🇮🇳' },
-    { id: 'd5', name: 'Latte (Iced)', price: 6, emoji: '🧊' },
+    { id: 'd11', name: 'Matcha', price: 6, emoji: '🍵', hasTemp: true, variants: { hot: 'd11-hot', iced: 'd11-iced' } },
     { id: 'd10', name: 'No Drink', price: 0, emoji: '❌' },
   ],
   bakery: [
@@ -558,13 +587,40 @@ function renderMenu(items, gridId, category) {
     const card = document.createElement('div');
     card.className = 'item-card';
     card.id = 'card-' + item.id;
-    card.innerHTML = `
-      <div class="item-row">
-        <span class="item-emoji">${item.emoji}</span>
-        <span class="item-name">${item.name}</span>
-      </div>
-    `;
-    card.addEventListener('click', () => toggleItem(item, category));
+    
+    if (item.hasTemp) {
+      card.innerHTML = `
+        <div class="item-row">
+          <span class="item-emoji">${item.emoji}</span>
+          <span class="item-name">${item.name}</span>
+        </div>
+        <div class="temp-toggle" id="toggle-${item.id}">
+          <button class="temp-btn" data-temp="hot" data-item-id="${item.id}">Hot</button>
+          <button class="temp-btn" data-temp="iced" data-item-id="${item.id}">Iced</button>
+        </div>
+      `;
+      card.addEventListener('click', (e) => {
+        if (e.target.classList.contains('temp-btn')) return;
+        toggleItemWithTemp(item, category);
+      });
+      setTimeout(() => {
+        const toggle = document.getElementById('toggle-' + item.id);
+        toggle.querySelectorAll('.temp-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectTemp(item, btn.dataset.temp, category);
+          });
+        });
+      }, 0);
+    } else {
+      card.innerHTML = `
+        <div class="item-row">
+          <span class="item-emoji">${item.emoji}</span>
+          <span class="item-name">${item.name}</span>
+        </div>
+      `;
+      card.addEventListener('click', () => toggleItem(item, category));
+    }
     grid.appendChild(card);
   });
 }
@@ -581,13 +637,74 @@ function toggleItem(item, category) {
   }
   
   menuList.forEach(i => {
-    if (cart[cartKey] && cart[cartKey].id === i.id) {
+    if (cart[cartKey] && (cart[cartKey].id === i.id || cart[cartKey].baseId === i.id)) {
       const other = document.getElementById('card-' + i.id);
-      if (other) other.classList.remove('selected');
+      if (other) {
+        other.classList.remove('selected');
+        const toggle = other.querySelector('.temp-toggle');
+        if (toggle) {
+          toggle.classList.remove('show');
+          toggle.querySelectorAll('.temp-btn').forEach(b => b.classList.remove('active'));
+        }
+      }
     }
   });
   
   cart[cartKey] = { ...item, qty: 1 };
+  card.classList.add('selected');
+}
+
+function toggleItemWithTemp(item, category) {
+  const card = document.getElementById('card-' + item.id);
+  const toggle = document.getElementById('toggle-' + item.id);
+  const menuList = category === 'drinks' ? MENU.drinks : MENU.bakery;
+  const cartKey = category === 'drinks' ? 'drink' : 'bakery';
+  
+  if (cart[cartKey] && cart[cartKey].baseId === item.id) {
+    cart[cartKey] = null;
+    card.classList.remove('selected');
+    toggle.classList.remove('show');
+    toggle.querySelectorAll('.temp-btn').forEach(b => b.classList.remove('active'));
+    return;
+  }
+  
+  menuList.forEach(i => {
+    if (cart[cartKey] && (cart[cartKey].id === i.id || cart[cartKey].baseId === i.id)) {
+      const other = document.getElementById('card-' + i.id);
+      if (other) {
+        other.classList.remove('selected');
+        const otherToggle = other.querySelector('.temp-toggle');
+        if (otherToggle) {
+          otherToggle.classList.remove('show');
+          otherToggle.querySelectorAll('.temp-btn').forEach(b => b.classList.remove('active'));
+        }
+      }
+    }
+  });
+  
+  card.classList.add('selected');
+  toggle.classList.add('show');
+}
+
+function selectTemp(item, temp, category) {
+  const card = document.getElementById('card-' + item.id);
+  const toggle = document.getElementById('toggle-' + item.id);
+  const cartKey = category === 'drinks' ? 'drink' : 'bakery';
+  
+  toggle.querySelectorAll('.temp-btn').forEach(b => b.classList.remove('active'));
+  toggle.querySelector(`[data-temp="${temp}"]`).classList.add('active');
+  
+  const variantId = item.variants[temp];
+  const tempLabel = temp === 'hot' ? 'Hot' : 'Iced';
+  cart[cartKey] = { 
+    id: variantId, 
+    baseId: item.id,
+    name: `${item.name} (${tempLabel})`, 
+    price: item.price, 
+    emoji: item.emoji,
+    qty: 1 
+  };
+  
   card.classList.add('selected');
 }
 
@@ -597,8 +714,14 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   const errEl = document.getElementById('error-msg');
   errEl.textContent = '';
   if (!name) { errEl.textContent = 'Please enter your name!'; return; }
-  const hasDrink = !!cart.drink;
+  const hasDrink = cart.drink && cart.drink.price > 0;
   const hasBakery = cart.bakery && cart.bakery.price > 0;
+  
+  if (cart.drink && cart.drink.hasTemp && !cart.drink.baseId) {
+    errEl.textContent = 'Please select Hot or Iced for your ' + cart.drink.name + '!';
+    return;
+  }
+  
   if (!hasDrink && !hasBakery) { errEl.textContent = 'Please select a drink or bakery item!'; return; }
   const items = [];
   if (hasDrink) items.push(cart.drink);
