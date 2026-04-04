@@ -484,7 +484,7 @@
   <img class="success-mascot" id="success-mascot" src="" alt="Maple South">
   <h2 id="success-name">Order placed!</h2>
   <p id="success-details">Coming right up ✨</p>
-  <a class="new-order-btn" id="venmo-link" href="https://venmo.com/?txn=pay&recipients=maple-south-test&amount=6&note=MapleSouth" target="_blank" rel="noopener">Tap here to pay 💸</a>
+  <a class="new-order-btn" id="venmo-link" href="https://venmo.com/?txn=pay&recipients=snehan-sharma&amount=6&note=MapleSouth" target="_blank" rel="noopener">Tap here to pay 💸</a>
 </div>
 
 <script>
@@ -579,9 +579,12 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
   const errEl = document.getElementById('error-msg');
   errEl.textContent = '';
   if (!name) { errEl.textContent = 'Please enter your name!'; return; }
-  if (!cart.drink) { errEl.textContent = 'Please select a drink!'; return; }
-  const items = [cart.drink];
-  if (cart.bakery && cart.bakery.price > 0) items.push(cart.bakery);
+  const hasDrink = !!cart.drink;
+  const hasBakery = cart.bakery && cart.bakery.price > 0;
+  if (!hasDrink && !hasBakery) { errEl.textContent = 'Please select a drink or bakery item!'; return; }
+  const items = [];
+  if (hasDrink) items.push(cart.drink);
+  if (hasBakery) items.push(cart.bakery);
   if (!db) {
     errEl.textContent = window.__MS_CONFIG_FAILED__
       ? 'Can\'t load config.js. Run a local server in this folder (e.g. npx serve .) and open the http:// address.'
@@ -613,14 +616,20 @@ document.getElementById('submit-btn').addEventListener('click', async () => {
 
   const drink = cart.drink;
   const bakery = cart.bakery && cart.bakery.price > 0 ? cart.bakery : null;
-  const total = drink.price + (bakery ? bakery.price : 0);
+  const total = (drink ? drink.price : 0) + (bakery ? bakery.price : 0);
   document.getElementById('success-mascot').src = document.getElementById('logo-img').src;
   document.getElementById('success-name').textContent = 'Thanks, ' + name + '!';
-  let msg = drink.name;
-  if (bakery) msg += ' + pastry';
+  let msg = '';
+  if (drink && bakery) {
+    msg = drink.name + ' + pastry';
+  } else if (drink) {
+    msg = drink.name;
+  } else if (bakery) {
+    msg = 'Pastry';
+  }
   msg += ' coming right up ✨';
   document.getElementById('success-details').textContent = msg;
-  document.getElementById('venmo-link').href = 'https://venmo.com/?txn=pay&recipients=maple-south-test&amount=' + total + '&note=MapleSouth';
+  document.getElementById('venmo-link').href = 'https://venmo.com/?txn=pay&recipients=snehan-sharma&amount=' + total + '&note=MapleSouth';
   document.getElementById('success-screen').classList.add('show');
 });
 
